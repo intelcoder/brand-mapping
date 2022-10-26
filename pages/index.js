@@ -9,7 +9,7 @@ import { List, AutoSizer } from "react-virtualized";
 const fileTypes = ["TXT"];
 
 export default function Home() {
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState([]);
   const [regexStr, setRegexStr] = useState("");
   const [regexpOptions, setRegexpOptions] = useState("igm");
   const [matchedFilter, setMatchedFilter] = useState("all");
@@ -102,7 +102,7 @@ export default function Home() {
         </div>
 
         <div>
-          Total: {file.length} / Filtered: {transactions.length}
+          Total: {file?.length} / Filtered: {transactions?.length}
         </div>
         {transactions && (
           <AutoSizer>
