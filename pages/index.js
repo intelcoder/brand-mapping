@@ -64,7 +64,7 @@ export default function Home() {
                 name="regexpOptions"
                 className="p-3 mb-4 rounded w-80"
                 type="text"
-                placeholder="Type RegExp options here"
+                placeholder="Type RegExp options here(default igm)"
               />
             </div>
             <button
