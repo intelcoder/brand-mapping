@@ -1,8 +1,38 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import React, { useState, useEffect, useMemo } from "react";
+import { FileUploader } from "react-drag-drop-files";
+import Head from "next/head";
+import Image from "next/image";
+import styles from "../styles/Home.module.css";
+
+import { List, AutoSizer } from "react-virtualized";
+
+const fileTypes = ["TXT"];
 
 export default function Home() {
+  const [file, setFile] = useState(null);
+  const [regexStr, setRegexStr] = useState("");
+  const [regexpOptions, setRegexpOptions] = useState("igm");
+  const [matchedFilter, setMatchedFilter] = useState("all");
+  const handleChange = (file) => {
+    const fileReader = new FileReader();
+    fileReader.addEventListener("load", (event) => {
+      setFile(event.target.result.split("\n"));
+    });
+    fileReader.readAsText(file, "UTF-8");
+  };
+
+  useEffect(() => {}, []);
+
+  const transactions = useMemo(() => {
+    if (!file) return [];
+    const regex = new RegExp(regexStr, regexpOptions || "igm");
+    return file.filter((line) => {
+      const matched = line.match(regex);
+      if (matchedFilter === "all") return true;
+      if (matchedFilter === "matched" && matched) return true;
+      if (matchedFilter === "unmatched" && !matched) return true;
+    });
+  }, [file, regexStr, regexpOptions, matchedFilter]);
   return (
     <div className={styles.container}>
       <Head>
@@ -11,61 +41,123 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+      <main className="py-12">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setRegexStr(document.getElementsByName("regexp")?.[0].value);
+            setRegexpOptions(
+              document.getElementsByName("regexpOptions")?.[0].value
+            );
+            setMatchedFilter("all");
+          }}
         >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
+          <div className="flex flex-col">
+            <div className="flex gap-2">
+              <input
+                name="regexp"
+                className="p-3 mb-4 rounded w-80"
+                type="text"
+                placeholder="Type RegExp here"
+              />
+              <input
+                name="regexpOptions"
+                className="p-3 mb-4 rounded w-80"
+                type="text"
+                placeholder="Type RegExp options here"
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-blue-700 p-2 rounded mb-8 max-w-fit"
+            >
+              Find match
+            </button>
+          </div>
+        </form>
+
+        <div className="mb-4">
+          <FileUploader
+            classes="fileUploader"
+            handleChange={handleChange}
+            name="file"
+            types={fileTypes}
+          />
+        </div>
+        <div className="flex items-center gap-48 mb-4">
+          <div>Filters</div>
+          <div>
+            <select
+              value={matchedFilter}
+              onChange={(e) => {
+                setMatchedFilter(e.target.value);
+              }}
+              className="p-3 rounded "
+            >
+              <option value="all">All</option>
+              <option value="matched">Matched</option>
+              <option value="unmatched">Unmatched</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          Total: {file.length} / Filtered: {transactions.length}
+        </div>
+        {transactions && (
+          <AutoSizer>
+            {({ height, width }) => (
+              <List
+                height={height * 2}
+                width={width}
+                rowCount={transactions?.length}
+                rowHeight={40}
+                rowRenderer={({ index, key, style }) => {
+                  const line = transactions[index];
+                  const regex = new RegExp(regexStr, regexpOptions || "igm");
+                  const matched = line.match(regex);
+
+                  const newText =
+                    matched && regexStr
+                      ? line.replace(regex, `<mark>${matched[0]}</mark>`, "igm")
+                      : line;
+
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center "
+                      style={{
+                        display: "flex",
+                        gap: "12px",
+                        alignItem: "center",
+                        margin: "12px 0",
+                        maxHeight: "30px",
+                        ...style,
+                      }}
+                    >
+                      <div
+                        className="transaction-container"
+                        dangerouslySetInnerHTML={{
+                          __html: `<div>${newText}</div>`,
+                        }}
+                      />
+                      <div
+                        style={{
+                          borderRadius: "50%",
+                          width: "12px",
+                          height: "12px",
+                          backgroundColor: matched ? "lightgreen" : "red",
+                        }}
+                      ></div>
+                      <div> {matched ? "" : "Unmatched"}</div>
+                    </div>
+                  );
+                }}
+              />
+            )}
+          </AutoSizer>
+        )}
+      </main>
     </div>
-  )
+  );
 }
