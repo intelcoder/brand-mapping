@@ -149,7 +149,6 @@ export default function Home() {
                           backgroundColor: matched ? "lightgreen" : "red",
                         }}
                       ></div>
-                      <div> {matched ? "" : "Unmatched"}</div>
                     </div>
                   );
                 }}
